@@ -7,7 +7,7 @@ from picamera2.encoders import H264Encoder
 from picamera2.outputs import FfmpegOutput
 import getpass
 
-logging = os.getenv("LOGS").lower() == 'true' or False
+logging = (os.getenv("LOGS") or 'False').lower() == 'true' or False
 
 vid_width = os.getenv("WIDTH") or 1280
 vid_height = os.getenv("HEIGHT") or 720
