@@ -2,18 +2,21 @@ import os
 import time
 from datetime import datetime
 import signal
+from dotenv import load_dotenv
 from picamera2 import Picamera2
 from picamera2.encoders import H264Encoder
 from picamera2.outputs import FfmpegOutput
 import getpass
 
+load_dotenv(dotenv_path='.env.local')
+
 logging = (os.getenv("LOGS") or 'False').lower() == 'true' or False
 
-vid_width = os.getenv("WIDTH") or 1280
-vid_height = os.getenv("HEIGHT") or 720
-vid_framerate = os.getenv("FRAMERATE") or 30
-vid_bitrate = os.getenv("BITRATE") or 1500000
-vid_clipLength = os.getenv("CLIP_LENGTH") or 5
+vid_width = int(os.getenv("WIDTH", "1280"))
+vid_height = int(os.getenv("HEIGHT", "720"))
+vid_framerate = int(os.getenv("FRAMERATE", "30"))
+vid_bitrate = int(os.getenv("BITRATE", "1500000"))
+vid_clipLength = int(os.getenv("CLIP_LENGTH", "5"))
 
 output_dir = os.getenv("OUTPUT") or ("/home/" + getpass.getuser() + "/camera/media")
 os.makedirs(output_dir, exist_ok=True)

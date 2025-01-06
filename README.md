@@ -4,9 +4,11 @@ A dash camera application designed to run on the Raspberry Pi, using camera modu
 
 ## Getting Started
 
-Install the `picamera2` python dependency. The easiest way to achieve this, especially if this device will be dedicated to running as a dash camera, is to run:
+Install the `picamera2` and `dotenv` python dependencies. The easiest way to achieve this, especially if this device will be dedicated to running as a dash camera, is to run:
 
 `sudo apt install python-picamera2` or `sudo apt install python3-picamera2`
+
+`sudo apt install python-dotenv` or `sudo apt install python3-dotenv`
 
 ## Usage
 
