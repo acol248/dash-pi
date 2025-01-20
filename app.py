@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from picamera2 import Picamera2
 from picamera2.encoders import H264Encoder
 from picamera2.outputs import FfmpegOutput
+from libcamera import controls, Transform
 import getpass
 
 load_dotenv(dotenv_path='.env.local')
@@ -13,11 +14,12 @@ load_dotenv(dotenv_path='.env.local')
 # env
 logging = (os.getenv("LOGS") or 'False').lower() == 'true' or False
 recording_type = os.getenv('RECORDING_TYPE', 'constant')
-vid_width = int(os.getenv("WIDTH", "1280"))
-vid_height = int(os.getenv("HEIGHT", "720"))
+vid_width = int(os.getenv("WIDTH", "1920"))
+vid_height = int(os.getenv("HEIGHT", "1080"))
 vid_framerate = int(os.getenv("FRAMERATE", "30"))
 vid_bitrate = int(os.getenv("BITRATE", "1500000"))
 vid_clipLength = int(os.getenv("CLIP_LENGTH", "5"))
+use_hdr = os.getenv("HDR", False)
 
 # globals
 recording = False
@@ -32,9 +34,24 @@ os.makedirs(output_dir, exist_ok=True)
 
 camera = Picamera2()
 config = camera.create_video_configuration(
-    main={"size": (vid_width, vid_height)},
-    controls={"FrameRate": vid_framerate}
+    main={"size": (vid_width, vid_height), "format": "YUV420"},
+    controls={
+        "FrameRate": vid_framerate,
+        "AfMode": controls.AfModeEnum.Continuous,
+        "AeEnable": True,
+        "AwbEnable": True,
+        "AwbMode": controls.AwbModeEnum.Auto,
+        "AeConstraintMode": controls.AeConstraintModeEnum.Normal,
+        "AeExposureMode": controls.AeExposureModeEnum.Normal,
+        "AfSpeed": controls.AfSpeedEnum.Normal,
+        "AeMeteringMode": controls.AeMeteringModeEnum.CentreWeighted,
+        "AfMetering": controls.AfMeteringEnum.Auto,
+        "AfRange": controls.AfRangeEnum.Normal,
+        "NoiseReductionMode": controls.draft.NoiseReductionModeEnum.Fast,
+    }
 )
+
+config["transform"] = Transform(hflip=1, vflip=1)
 camera.configure(config)
 
 running = True
