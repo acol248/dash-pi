@@ -10,8 +10,6 @@ Install the `picamera2` and `dotenv` python dependencies. The easiest way to ach
 
 `sudo apt install python3-dotenv`
 
-`sudo apt install python3-numpy`
-
 `sudo apt install opencv-python`
 
 ## Usage
