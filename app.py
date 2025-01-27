@@ -8,6 +8,7 @@ from picamera2 import Picamera2
 from picamera2.encoders import H264Encoder
 from picamera2.outputs import FfmpegOutput
 from libcamera import controls, Transform
+from server import create_server
 
 load_dotenv(dotenv_path='.env.local')
 
@@ -113,7 +114,7 @@ class Camera:
 
     def run_motion(self):
         prev_frame = None
-        
+
         try:
             while True:
                 frame = self.camera.capture_array()
@@ -151,7 +152,7 @@ class Camera:
                 self.stop_recording()
             except Exception:
                 pass
-            
+
             self.camera.stop()
             print("Application exited.")
 
@@ -159,7 +160,7 @@ class Camera:
         try:
             self.recording = True
             self.camera.start()
-            
+
             if (LOGGING):
                 print("Press 'Ctrl+C' to stop.")
 
@@ -181,17 +182,19 @@ class Camera:
                 self.stop_recording()
             except Exception:
                 pass
-            
+
             self.camera.stop()
             print("Application exited.")
 
 
 if __name__ == "__main__":
     instance = Camera()
-    
+    app = create_server()
+    app.run(host="zero2.local", port=5280)
+
     if not os.path.exists(OUTPUT_DIRECTORY):
         os.makedirs(OUTPUT_DIRECTORY)
-    
+
     if (RECORDING_TYPE == 'motion'):
         instance.run_motion()
     else:
