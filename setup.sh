@@ -7,6 +7,7 @@ SERVICE_FILE="/etc/systemd/system/dashpi.service"
 VENV_DIR="$APP_DIR/venv"
 REQUIREMENTS_FILE="$APP_DIR/requirements.txt"
 PYTHON_BIN=$(which python3)
+USER=$(whoami)
 
 # check Python installed - if not install
 if ! command -v python3 &> /dev/null; then
@@ -36,8 +37,8 @@ Description=Dash Pi
 After=network.target
 
 [Service]
-User=pi
-Group=pi
+User=$USER
+Group=$(id -gn "$USER")
 Environment="PATH=$APP_DIR/venv/bin:/usr/local/bin:/usr/bin:/bin"
 ExecStart=$APP_DIR/venv/bin/python $APP_DIR/app.py
 WorkingDirectory=$APP_DIR
