@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import time
 import cv2
 import os
@@ -186,7 +188,10 @@ class Camera:
 
 if __name__ == "__main__":
     instance = Camera()
-
+    
+    if not os.path.exists(OUTPUT_DIRECTORY):
+        os.makedirs(OUTPUT_DIRECTORY)
+    
     if (RECORDING_TYPE == 'motion'):
         instance.run_motion()
     else:
