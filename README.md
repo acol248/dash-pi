@@ -4,17 +4,14 @@ A dash camera application designed to run on the Raspberry Pi, using camera modu
 
 ## Getting Started
 
-Install the `picamera2` and `dotenv` python dependencies. The easiest way to achieve this, especially if this device will be dedicated to running as a dash camera, is to run:
+Install the required dependencies.
 
-`sudo apt install python3-picamera2`
+`sudo apt update`
 
-`sudo apt install python3-dotenv`
-
-`sudo apt install opencv-python`
+`sudo apt install python3-picamera2 python3-dotenv python3-opencv build-essential libcap-dev libcamera-dev python3-kms++`
 
 ## Usage
 
-The script can be launched directly with `python3 app.py` or can be launched via the shell script using `./launcher.sh`, after ensuring the correct file permissions are set.
+Run `./setup.sh` to install the python app to the Raspberry Pi's boot services. The service will start automatically and will attempt to keep itself running whenever the Pi is on. To remove the service and any related files, run `./uninstall.sh`. The removal script also gives the option to remove the application files.
 
-The script can be gracefully terminated using Ctrl+C, if running locally, or by using the terminate script `./terminate.sh`.
-
+The Python app can also be launched directly with `python3 app.py`. The script can then be gracefully terminated using Ctrl+C.
