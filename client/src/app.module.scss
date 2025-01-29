@@ -1,0 +1,29 @@
+.app {
+  & .app__player {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    background-color: white;
+    padding: 1rem;
+
+    & > video {
+      display: block;
+      width: min(100%, 768px);
+      aspect-ratio: 16 / 9;
+      margin: 0 auto;
+    }
+  }
+
+  & .app__media-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+
+    @media screen and (min-width: 768px) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    @media screen and (min-width: 1024px) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+}
