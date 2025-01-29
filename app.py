@@ -190,7 +190,7 @@ class Camera:
 if __name__ == "__main__":
     instance = Camera()
     app = create_server()
-    app.run(host="zero2.local", port=5280)
+    app.run(host="zero2.local")
 
     if not os.path.exists(OUTPUT_DIRECTORY):
         os.makedirs(OUTPUT_DIRECTORY)
