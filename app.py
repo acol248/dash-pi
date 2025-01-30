@@ -3,6 +3,7 @@
 import time
 import cv2
 import os
+import threading
 from dotenv import load_dotenv
 from picamera2 import Picamera2
 from picamera2.encoders import H264Encoder
@@ -31,6 +32,10 @@ VIDEO_FIXED_CLIP_LENGTH = int(os.getenv("CLIP_LENGTH", "5"))
 # directory to output recorded media
 OUTPUT_DIRECTORY = os.getenv('OUTPUT_DIR', './media')
 
+# start flask server
+def start_server():
+    app = create_server()
+    app.run(host="zero2.local")
 
 class Camera:
     def __init__(self):
@@ -189,8 +194,9 @@ class Camera:
 
 if __name__ == "__main__":
     instance = Camera()
-    app = create_server()
-    app.run(host="zero2.local")
+    
+    server_thread = threading.Thread(target=start_server)
+    server_thread.start()
 
     if not os.path.exists(OUTPUT_DIRECTORY):
         os.makedirs(OUTPUT_DIRECTORY)
