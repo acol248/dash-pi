@@ -1,8 +1,11 @@
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+
+// helpers
+import { downloadMedia, formatTime, hasAudio } from "../../helpers";
+
 // styles
 import useClassList, { mapClassesCurried } from "@blocdigital/useclasslist";
 import maps from "./Player.module.scss";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { downloadMedia, formatTime, hasAudio } from "../../helpers";
 
 // types
 interface Props {
