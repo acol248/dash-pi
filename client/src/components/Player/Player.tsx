@@ -74,6 +74,8 @@ export default function Player({ className, src, name }: Props) {
   const onSeek10 = (dir = "forward") => {
     if (!videoRef.current) return;
 
+    if (dir === "backward" && isEnded) setIsEnded(false);
+
     const seekBy = 10;
     const seekTo =
       dir === "forward"
