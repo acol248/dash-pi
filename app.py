@@ -33,16 +33,24 @@ VIDEO_FIXED_CLIP_LENGTH = int(os.getenv("CLIP_LENGTH", "5"))
 OUTPUT_DIRECTORY = os.getenv('OUTPUT_DIR', './media')
 
 # start flask server
+
+
 def start_server():
     app = create_server()
     app.run(host="zero2.local")
+
 
 class Camera:
     def __init__(self):
         self.camera = Picamera2()
 
         self.motion_config = self.camera.create_preview_configuration(
-            main={"size": (640, 480)})
+            main={"size": (640, 480)},
+            controls={
+                "Brightness": 0.35,
+                "AnalogueGain": 2.0,
+            }
+        )
         self.recording_config = self.camera.create_video_configuration(
             main={"size": (VIDEO_WIDTH, VIDEO_HEIGHT)},
             controls={
@@ -57,6 +65,9 @@ class Camera:
                 "AfMetering": controls.AfMeteringEnum.Auto,
                 "AfRange": controls.AfRangeEnum.Normal,
                 "NoiseReductionMode": controls.draft.NoiseReductionModeEnum.Fast,
+                "Brightness": 0.1,
+                "AnalogueGain": 2.0,
+                "ExposureValue": 2.0,
             }
         )
 
@@ -194,7 +205,7 @@ class Camera:
 
 if __name__ == "__main__":
     instance = Camera()
-    
+
     server_thread = threading.Thread(target=start_server)
     server_thread.start()
 
