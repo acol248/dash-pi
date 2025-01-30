@@ -42,6 +42,7 @@ export function App() {
   return (
     <div className={classList}>
       <Player
+        className={mc("app__player")}
         src={selectedMedia ? `/api/video/${selectedMedia?.name}` : undefined}
         name={selectedMedia?.name}
       />
