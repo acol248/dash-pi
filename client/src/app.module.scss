@@ -3,7 +3,7 @@
     position: sticky;
     top: 0;
     width: 100%;
-    background-color: white;
+    background-color: var(--color-common-white);
     padding: 1rem;
 
     & > video {
@@ -17,9 +17,22 @@
   & .app__media-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+
+    & .app__media {
+      &--selected {
+        border: 2px solid var(--color-primary-main);
+        background-color: color-mix(in srgb, var(--color-primary-main), var(--color-grey-200) 60%);
+      }
+    }
+    
+    @media screen and (min-width: 552px) {
+      margin: 0 0.75rem;
+    }
 
     @media screen and (min-width: 768px) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
     }
 
     @media screen and (min-width: 1024px) {

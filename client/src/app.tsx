@@ -2,6 +2,7 @@ import { useEffect, useState } from "preact/hooks";
 
 // components
 import MediaItem from "./components/MediaItem";
+import Player from "./components/Player";
 
 // styles
 import useClassList, { mapClassesCurried } from "@blocdigital/useclasslist";
@@ -40,19 +41,18 @@ export function App() {
 
   return (
     <div className={classList}>
-      <div className={mc('app__player')}>
-        <video
-          src={`/api/video/${selectedMedia?.name}`}
-          autoplay
-          muted
-          controls
-        />
-      </div>
+      <Player
+        src={selectedMedia ? `/api/video/${selectedMedia?.name}` : undefined}
+        name={selectedMedia?.name}
+      />
 
       <div className={mc("app__media-grid")}>
         {data &&
           data.map(({ name, size, modified }) => (
             <MediaItem
+              className={mc(
+                `app__media${name === selectedMedia?.name ? " app__media--selected" : ""}`
+              )}
               key={name + size + modified}
               name={name}
               size={size}
