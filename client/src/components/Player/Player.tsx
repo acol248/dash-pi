@@ -56,7 +56,7 @@ export default function Player({ className, src, name }: Props) {
         videoRef.current.play();
         setIsEnded(false);
 
-        return p;
+        return !p;
       }
 
       if (!p) {
