@@ -9,7 +9,9 @@ from picamera2 import Picamera2
 from picamera2.encoders import H264Encoder
 from picamera2.outputs import FfmpegOutput
 from libcamera import controls, Transform
+from gevent.pywsgi import WSGIServer
 from server import create_server
+
 
 load_dotenv(dotenv_path='.env.local')
 
@@ -33,12 +35,11 @@ VIDEO_FIXED_CLIP_LENGTH = int(os.getenv("CLIP_LENGTH", "5"))
 OUTPUT_DIRECTORY = os.getenv('OUTPUT_DIR', './media')
 
 # start flask server
-
-
 def start_server():
     app = create_server()
-    app.run(host="zero2.local")
-
+    server = WSGIServer(('', 5000), app)
+    server.serve_forever()
+    
 
 class Camera:
     def __init__(self):
