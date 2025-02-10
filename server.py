@@ -7,10 +7,11 @@ from datetime import datetime, timezone
 load_dotenv(dotenv_path='.env.local')
 
 OUTPUT_DIRECTORY = os.getenv('OUTPUT_DIR', './media')
+STATIC = os.getenv('STATIC', 'client/dist')
 
 
 def create_server():
-    app = Flask(__name__, static_folder='client/dist', static_url_path='')
+    app = Flask(__name__, static_folder=STATIC, static_url_path='')
 
     @app.route('/')
     def serve():
