@@ -33,17 +33,31 @@ VIDEO_BITRATE = int(os.getenv("BITRATE", "1500000"))  # Video bitrate (bytes)
 VIDEO_FIXED_CLIP_LENGTH = int(os.getenv("CLIP_LENGTH", "5"))
 # directory to output recorded media
 OUTPUT_DIRECTORY = os.getenv('OUTPUT_DIR', './media')
+# enable HDR mode (where supported)
+HDR_ENABLED = (os.getenv("HDR_ENABLED") or 'False').lower() == 'true' or False
+# enable night mode
+NIGHT_MODE = (os.getenv("NIGHT_MODE") or 'False').lower() == 'true' or False
 
 # start flask server
+
+
 def start_server():
     app = create_server()
     server = WSGIServer(('', 5000), app)
     server.serve_forever()
-    
+
 
 class Camera:
     def __init__(self):
         self.camera = Picamera2()
+
+        if (HDR_ENABLED):
+            if (NIGHT_MODE):
+                self.hdr = controls.HdrModeEnum.Night
+            else:
+                self.hdr = controls.HdrModeEnum.SingleExposure
+        else:
+            self.hdr = controls.HdrModeEnum.Off
 
         self.motion_config = self.camera.create_preview_configuration(
             main={"size": (640, 480)},
@@ -69,6 +83,7 @@ class Camera:
                 "Brightness": 0.1,
                 "AnalogueGain": 2.0,
                 "ExposureValue": 2.0,
+                "HdrMode": self.hdr,
             }
         )
 
