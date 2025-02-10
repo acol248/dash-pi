@@ -8,7 +8,9 @@ Install the required dependencies.
 
 `sudo apt update`
 
-`sudo apt install python3-picamera2 python3-dotenv python3-opencv build-essential libcap-dev libcamera-dev python3-kms++`
+`sudo apt upgrade`
+
+`sudo apt install python3-picamera2 python3-dotenv python3-opencv build-essential libcap-dev libcamera-dev python3-kms++ python3-gevent`
 
 ## Usage
 
