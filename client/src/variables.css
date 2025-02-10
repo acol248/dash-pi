@@ -1,0 +1,48 @@
+* {
+  /* Colors */
+  --color-common-black: #181818;
+  --color-common-white: #ffffff;
+  --color-common-grey: #808080;
+
+  --color-error: #ef5858;
+
+  --color-grey-100: #fafafa;
+  --color-grey-200: #f5f5f5;
+  --color-grey-300: #eeeeee;
+  --color-grey-400: #e0e0e0;
+  --color-grey-500: #bdbdbd;
+  --color-grey-600: #9e9e9e;
+  --color-grey-700: #757575;
+  --color-grey-800: #616161;
+  --color-grey-900: #424242;
+  --color-grey-1000: #303030;
+  --color-grey-1100: #212121;
+
+  --color-red: #ff0000;
+  --color-green: #00ff00;
+  --color-blue: #0000ff;
+  --color-yellow: #ffff00;
+  --color-magenta: #ff00ff;
+  --color-cyan: #00ffff;
+  --color-orange: #ffa500;
+  --color-purple: #800080;
+  --color-teal: #008080;
+  --color-lime: #00ff00;
+  --color-pink: #ffc0cb;
+  --color-brown: #a52a2a;
+
+  --color-primary-light: #20a9cd;
+  --color-primary-main: #1985a1;
+  --color-primary-dark: #16738b;
+
+  --color-secondary-light: #627685;
+  --color-secondary-main: #4c5c68;
+  --color-secondary-dark: #414f59;
+
+  /* Durations */
+  --duration-fastest: 75ms;
+  --duration-fast: 100ms;
+  --duration-normal: 150ms;
+  --duration-slow: 250ms;
+  --duration-slowest: 500ms;
+}

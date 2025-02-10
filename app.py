@@ -3,11 +3,15 @@
 import time
 import cv2
 import os
+import threading
 from dotenv import load_dotenv
 from picamera2 import Picamera2
 from picamera2.encoders import H264Encoder
 from picamera2.outputs import FfmpegOutput
 from libcamera import controls, Transform
+from gevent.pywsgi import WSGIServer
+from server import create_server
+
 
 load_dotenv(dotenv_path='.env.local')
 
@@ -29,14 +33,39 @@ VIDEO_BITRATE = int(os.getenv("BITRATE", "1500000"))  # Video bitrate (bytes)
 VIDEO_FIXED_CLIP_LENGTH = int(os.getenv("CLIP_LENGTH", "5"))
 # directory to output recorded media
 OUTPUT_DIRECTORY = os.getenv('OUTPUT_DIR', './media')
+# enable HDR mode (where supported)
+HDR_ENABLED = (os.getenv("HDR_ENABLED") or 'False').lower() == 'true' or False
+# enable night mode
+NIGHT_MODE = (os.getenv("NIGHT_MODE") or 'False').lower() == 'true' or False
+
+# start flask server
+
+
+def start_server():
+    app = create_server()
+    server = WSGIServer(('', 5000), app)
+    server.serve_forever()
 
 
 class Camera:
     def __init__(self):
         self.camera = Picamera2()
 
+        if (HDR_ENABLED):
+            if (NIGHT_MODE):
+                self.hdr = controls.HdrModeEnum.Night
+            else:
+                self.hdr = controls.HdrModeEnum.SingleExposure
+        else:
+            self.hdr = controls.HdrModeEnum.Off
+
         self.motion_config = self.camera.create_preview_configuration(
-            main={"size": (640, 480)})
+            main={"size": (640, 480)},
+            controls={
+                "Brightness": 0.35,
+                "AnalogueGain": 2.0,
+            }
+        )
         self.recording_config = self.camera.create_video_configuration(
             main={"size": (VIDEO_WIDTH, VIDEO_HEIGHT)},
             controls={
@@ -51,6 +80,10 @@ class Camera:
                 "AfMetering": controls.AfMeteringEnum.Auto,
                 "AfRange": controls.AfRangeEnum.Normal,
                 "NoiseReductionMode": controls.draft.NoiseReductionModeEnum.Fast,
+                "Brightness": 0.1,
+                "AnalogueGain": 2.0,
+                "ExposureValue": 2.0,
+                "HdrMode": self.hdr,
             }
         )
 
@@ -113,7 +146,7 @@ class Camera:
 
     def run_motion(self):
         prev_frame = None
-        
+
         try:
             while True:
                 frame = self.camera.capture_array()
@@ -151,7 +184,7 @@ class Camera:
                 self.stop_recording()
             except Exception:
                 pass
-            
+
             self.camera.stop()
             print("Application exited.")
 
@@ -159,7 +192,7 @@ class Camera:
         try:
             self.recording = True
             self.camera.start()
-            
+
             if (LOGGING):
                 print("Press 'Ctrl+C' to stop.")
 
@@ -181,17 +214,20 @@ class Camera:
                 self.stop_recording()
             except Exception:
                 pass
-            
+
             self.camera.stop()
             print("Application exited.")
 
 
 if __name__ == "__main__":
     instance = Camera()
-    
+
+    server_thread = threading.Thread(target=start_server)
+    server_thread.start()
+
     if not os.path.exists(OUTPUT_DIRECTORY):
         os.makedirs(OUTPUT_DIRECTORY)
-    
+
     if (RECORDING_TYPE == 'motion'):
         instance.run_motion()
     else:

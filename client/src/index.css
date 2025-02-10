@@ -1,0 +1,10 @@
+@import url('./fonts/Poppins/font.css');
+@import url('./variables.css');
+
+html {
+  font-family: Poppins;
+}
+
+body {
+  margin: 0;
+}
