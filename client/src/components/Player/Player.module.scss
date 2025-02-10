@@ -12,14 +12,16 @@
     margin: 0 auto;
     border-radius: 16px;
     background-color: var(--color-grey-1100);
+    filter: drop-shadow(0 0 8px rgba(0,0,0,0.3));
   }
 
   & .player__timings {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    width: calc(100% - 1rem);
-    padding: 0.5rem 0.5rem 0.25rem;
+    width: min(calc(100% - 1rem), 720px);
+    margin: 0 auto;
+    padding: 1rem 0.5rem 0.25rem;
 
     & > span {
       font-size: 0.875rem;
@@ -32,7 +34,9 @@
     align-items: center;
     justify-content: center;
     gap: 1rem;
-    padding: 0 1rem 0.75rem;
+    padding: 0 1rem 1rem;
+    width: min(calc(100% - 1rem), 720px);
+    margin: 0 auto;
 
     & .player__button {
       background-color: transparent;
@@ -71,11 +75,16 @@
   @media screen and (min-width: 768px) {
     & .player__timings {
       width: calc(100% - 1.5rem);
-      padding: 1rem 0.5rem 0.25rem;
   
       & > span {
         font-size: 1rem;
       }
+    }
+  }
+
+  @media screen and (min-width: 1024px) {
+    & .player__video {
+      filter: drop-shadow(0 0 12px rgba(0,0,0,0.4));
     }
   }
 }
