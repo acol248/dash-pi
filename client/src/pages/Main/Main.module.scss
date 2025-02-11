@@ -1,12 +1,12 @@
-.app {
+.main {
   background-color: var(--color-grey-100);
 
-  & .app__media-grid {
+  & .main__media-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 0.75rem;
 
-    & .app__media {
+    & .main__media {
       &--selected {
         border: 2px solid var(--color-primary-main);
         background-color: color-mix(
@@ -31,7 +31,7 @@
     display: flex;
     justify-content: center;
 
-    & .app__player {
+    & .main__player {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -42,7 +42,7 @@
       height: calc(100vh - 0.75rem);
     }
 
-    & .app__media-grid {
+    & .main__media-grid {
       flex-grow: 1;
       grid-template-columns: minmax(0, 1fr);
     }
