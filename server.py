@@ -1,6 +1,7 @@
 import os
 import re
 import jwt
+import sqlite3
 from flask import Flask, send_from_directory, request, Response, abort, jsonify, make_response
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
@@ -15,9 +16,25 @@ STATIC = os.getenv('STATIC', 'client/dist')
 AUTH_SECRET = os.getenv('AUTH_SECRET', False)
 ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'SomeSecurePassword')
 
-users = {
-    'admin': generate_password_hash(ADMIN_PASSWORD, method='sha256')
-}
+os.makedirs('db', exist_ok=True)
+DB_PATH = os.getenv('DB_PATH', 'db/database.db')
+
+# bootup tasks setting up the database
+conn = sqlite3.connect(DB_PATH)
+c = conn.cursor()
+c.execute('CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, password TEXT)')
+conn.commit()
+conn.close()
+
+# check if admin user exists, if not create it
+conn = sqlite3.connect(DB_PATH)
+c = conn.cursor()
+c.execute('SELECT * FROM users WHERE username = ?', ('admin',))
+if c.fetchone() is None:
+    c.execute('INSERT INTO users (username, password) VALUES (?, ?)', ('admin', generate_password_hash(ADMIN_PASSWORD)))
+    conn.commit()
+conn.close()
+    
 
 def auth(f):
     @wraps(f)
@@ -51,7 +68,13 @@ def create_server():
         username = auth['username']
         password = auth['password']
         
-        if username not in users or not check_password_hash(users[username], password):
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute('SELECT * FROM users WHERE username = ?', (username,))
+        user = c.fetchone()
+        conn.close()
+        
+        if not user or not check_password_hash(user[1], password):
             return jsonify({'error': 'Invalid credentials'}), 401
 
         token = jwt.encode({'user': username, 'exp': datetime.utcnow() + timedelta(hours=1)}, AUTH_SECRET, algorithm='HS256')
@@ -155,6 +178,5 @@ def create_server():
     def not_found(e):
         return app.send_static_file('index.html')
             
-        
 
     return app
