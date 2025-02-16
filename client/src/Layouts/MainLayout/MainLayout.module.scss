@@ -1,0 +1,40 @@
+.main-layout {
+  & .main-layout__nav {
+    position: sticky;
+    inset: 0 0 auto 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 1.5rem;
+    height: 48px;
+    z-index: 2000;
+    background-color: var(--color-common-white);
+
+    & > a {
+      line-height: 0;
+      color: var(--color-grey-1000);
+
+      & > svg {
+        width: 1.5rem;
+        height: 1.5rem;
+        fill: currentColor;
+      }
+    }
+  }
+
+  & .main-layout__content {
+    padding: 0 0.5rem;
+  }
+
+  @media screen and (min-width: 552px) {
+    & .main-layout__content {
+      padding: 0 1.25rem;
+    }
+  }
+
+  @media screen and (min-width: 1024px) {
+    & .main-layout__content {
+      padding: 0 2rem;
+    }
+  }
+}
