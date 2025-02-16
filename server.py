@@ -94,6 +94,33 @@ def create_server():
     def authCheck(user):
         return jsonify({'data': user, 'error': None})
 
+    @app.route('/api/change-password', methods=['POST'])
+    @auth
+    def change_password(user):        
+        data = request.json
+        if not data or 'password' not in data or 'newPassword' not in data:
+            return jsonify({'data': None, 'error': 'Bad request.'}), 400
+
+        password = data['password']
+        new_password = data['newPassword']
+        
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute('SELECT * FROM users WHERE username = ?', (user,))
+        user = c.fetchone()
+        conn.close()
+        
+        if not user or not check_password_hash(user[1], password):
+            return jsonify({'error': 'Invalid credentials'}), 401
+        
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute('UPDATE users SET password = ? WHERE username = ?', (generate_password_hash(new_password), user if isinstance(user, str) else user[0]))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'data': True, 'error': None})
+
     @app.route('/api/media', methods=['GET'])
     @auth
     def media(user):
