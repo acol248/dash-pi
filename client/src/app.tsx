@@ -9,6 +9,7 @@ import {
 // pages
 import Main from "./pages/Main";
 import Login from "./pages/Login";
+import Profile from "./pages/Profile";
 
 // helpers
 import { checkAuth } from "./helpers/queries";
@@ -35,7 +36,14 @@ export function App() {
           path="/"
           element={authed ? <Main /> : <Navigate replace to="/login" />}
         />
-        <Route path="/login" element={<Login />} />
+        <Route
+          path="/profile"
+          element={authed ? <Profile /> : <Navigate replace to="/login" />}
+        />
+        <Route
+          path="/login"
+          element={authed ? <Navigate replace to="/" /> : <Login />}
+        />
       </Routes>
     </Router>
   );
