@@ -60,7 +60,7 @@ def create_server():
         resp.set_cookie('token', token, httponly=True)
         return resp
 
-    @app.route('/api/logout', methods=['POST'])
+    @app.route('/api/logout', methods=['GET'])
     def logout():
         resp = make_response(jsonify({'data': True, 'error': None}))
         resp.set_cookie('token', '', expires=0)
