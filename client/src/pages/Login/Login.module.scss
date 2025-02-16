@@ -1,1 +1,24 @@
-.login {}
+.login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+
+  & .login__form {
+    padding: 1.5rem;
+    border-radius: 6px;
+    width: min(calc(100vw - 2rem), 552px);
+
+    & > h1 {
+      margin: 0 0 1rem;
+    }
+
+    & > label {
+      margin: 0 0 0.5rem;
+    }
+
+    & > button {
+      margin: 0.5rem 0 0;
+    }
+  }
+}
