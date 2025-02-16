@@ -20,6 +20,12 @@ export function App() {
 
   // check if user is authenticated
   useEffect(() => {
+    if (window.location.pathname === "/logout") {
+      fetch("/api/logout").then(() => (window.location.href = "/login"));
+
+      return;
+    }
+
     (async () => {
       const isAuthed = await checkAuth();
       setAuthed(isAuthed);
