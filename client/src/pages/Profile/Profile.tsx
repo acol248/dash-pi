@@ -15,7 +15,11 @@ export default function Profile() {
 
   return (
     <MainLayout className={classList}>
-      <a className={mc('profile__link')} href="/logout">Logout</a>
+      <div className={mc("profile__inner")}>
+        <a className={mc("profile__link")} href="/logout">
+          Logout
+        </a>
+      </div>
     </MainLayout>
   );
 }
