@@ -12,7 +12,7 @@
     margin: 0 auto;
     border-radius: 16px;
     background-color: var(--color-grey-1100);
-    filter: drop-shadow(0 0 8px rgba(0,0,0,0.3));
+    filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.3));
   }
 
   & .player__timings {
@@ -75,7 +75,7 @@
   @media screen and (min-width: 768px) {
     & .player__timings {
       width: calc(100% - 1.5rem);
-  
+
       & > span {
         font-size: 1rem;
       }
@@ -84,7 +84,7 @@
 
   @media screen and (min-width: 1024px) {
     & .player__video {
-      filter: drop-shadow(0 0 12px rgba(0,0,0,0.4));
+      filter: drop-shadow(0 0 12px rgba(0, 0, 0, 0.4));
     }
   }
 }
