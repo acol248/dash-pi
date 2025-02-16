@@ -1,67 +1,63 @@
 import { useEffect, useState } from "preact/hooks";
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  Navigate,
+} from "react-router-dom";
 
-// components
-import MediaItem from "./components/MediaItem";
-import Player from "./components/Player";
+// pages
+import Main from "./pages/Main";
+import Login from "./pages/Login";
+import Profile from "./pages/Profile";
 
-// styles
-import useClassList, { mapClassesCurried } from "@blocdigital/useclasslist";
-import maps from "./app.module.scss";
-
-// types
-import type { GetMediaItemsRes } from "./app.d";
-
-const mc = mapClassesCurried(maps, true);
+// helpers
+import { checkAuth } from "./helpers/queries";
+import ChangePassword from "./pages/ChangePassword";
 
 export function App() {
-  const [data, setData] = useState<GetMediaItemsRes["data"] | null>(null);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [authed, setAuthed] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  const classList = useClassList({ defaultClass: "app", maps, string: true });
-
-  const selectedMedia = data?.find(
-    ({ name, size }) => name + size === selected,
-    [selected, data]
-  );
-
-  // get data
+  // check if user is authenticated
   useEffect(() => {
-    if (data) return;
+    if (window.location.pathname === "/logout") {
+      fetch("/api/logout").then(() => (window.location.href = "/login"));
 
-    fetch("/api/media", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }).then(async (res) => {
-      const json: GetMediaItemsRes = await res.json();
-      setData(json.data);
-    });
-  }, [data]);
+      return;
+    }
+
+    (async () => {
+      const isAuthed = await checkAuth();
+      setAuthed(isAuthed);
+      setLoading(false);
+    })();
+  }, []);
+
+  if (loading) return <div>Loading...</div>;
 
   return (
-    <div className={classList}>
-      <Player
-        className={mc("app__player")}
-        src={selectedMedia ? `/api/video/${selectedMedia?.name}` : undefined}
-        name={selectedMedia?.name}
-      />
-
-      <div className={mc("app__media-grid")}>
-        {data &&
-          data.map(({ name, size, modified }) => (
-            <MediaItem
-              className={mc(
-                `app__media${name === selectedMedia?.name ? " app__media--selected" : ""}`
-              )}
-              key={name + size + modified}
-              name={name}
-              size={size}
-              modified={modified}
-              onClick={() => setSelected(name + size)}
-            />
-          ))}
-      </div>
-    </div>
+    <Router>
+      <Routes>
+        <Route
+          path="/"
+          element={authed ? <Main /> : <Navigate replace to="/login" />}
+        />
+        <Route
+          path="/profile"
+          element={authed ? <Profile /> : <Navigate replace to="/login" />}
+        />
+        <Route
+          path="/change-password"
+          element={
+            authed ? <ChangePassword /> : <Navigate replace to="/login" />
+          }
+        />
+        <Route
+          path="/login"
+          element={authed ? <Navigate replace to="/" /> : <Login />}
+        />
+      </Routes>
+    </Router>
   );
 }

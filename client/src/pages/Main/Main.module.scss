@@ -1,12 +1,16 @@
-.app {
-  background-color: var(--color-grey-100);
+.main {
+  & .main__player {
+    top: 48px;
+    margin: 0 auto;
+  }
 
-  & .app__media-grid {
+  & .main__media-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 0.75rem;
+    padding: 0 0 0.5rem;
 
-    & .app__media {
+    & .main__media {
       &--selected {
         border: 2px solid var(--color-primary-main);
         background-color: color-mix(
@@ -31,18 +35,18 @@
     display: flex;
     justify-content: center;
 
-    & .app__player {
+    & .main__player {
       display: flex;
       align-items: center;
       justify-content: center;
       flex-direction: column;
       position: sticky;
-      top: 0;
+      top: 48px;
       width: calc(70vw - 1.5rem);
-      height: calc(100vh - 0.75rem);
+      height: calc(100vh - 48px - 0.75rem);
     }
 
-    & .app__media-grid {
+    & .main__media-grid {
       flex-grow: 1;
       grid-template-columns: minmax(0, 1fr);
     }
