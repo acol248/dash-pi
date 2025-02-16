@@ -13,6 +13,7 @@ import Profile from "./pages/Profile";
 
 // helpers
 import { checkAuth } from "./helpers/queries";
+import ChangePassword from "./pages/ChangePassword";
 
 export function App() {
   const [authed, setAuthed] = useState<boolean>(false);
@@ -45,6 +46,12 @@ export function App() {
         <Route
           path="/profile"
           element={authed ? <Profile /> : <Navigate replace to="/login" />}
+        />
+        <Route
+          path="/change-password"
+          element={
+            authed ? <ChangePassword /> : <Navigate replace to="/login" />
+          }
         />
         <Route
           path="/login"

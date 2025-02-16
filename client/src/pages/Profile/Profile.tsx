@@ -16,6 +16,9 @@ export default function Profile() {
   return (
     <MainLayout className={classList}>
       <div className={mc("profile__inner")}>
+        <a className={mc("profile__link")} href="/change-password">
+          Change Password
+        </a>
         <a className={mc("profile__link")} href="/logout">
           Logout
         </a>
