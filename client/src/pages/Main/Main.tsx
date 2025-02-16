@@ -10,6 +10,7 @@ import maps from "./Main.module.scss";
 
 // types
 import type { GetMediaItemsRes } from "./main";
+import MainLayout from "../../Layouts/MainLayout";
 
 const mc = mapClassesCurried(maps, true);
 
@@ -40,28 +41,30 @@ export default function Main() {
   }, [data]);
 
   return (
-    <div className={classList}>
-      <Player
-        className={mc("main__player")}
-        src={selectedMedia ? `/api/video/${selectedMedia?.name}` : undefined}
-        name={selectedMedia?.name}
-      />
+    <MainLayout>
+      <div className={classList}>
+        <Player
+          className={mc("main__player")}
+          src={selectedMedia ? `/api/video/${selectedMedia?.name}` : undefined}
+          name={selectedMedia?.name}
+        />
 
-      <div className={mc("main__media-grid")}>
-        {data &&
-          data.map(({ name, size, modified }) => (
-            <MediaItem
-              className={mc(
-                `main__media${name === selectedMedia?.name ? " main__media--selected" : ""}`
-              )}
-              key={name + size + modified}
-              name={name}
-              size={size}
-              modified={modified}
-              onClick={() => setSelected(name + size)}
-            />
-          ))}
+        <div className={mc("main__media-grid")}>
+          {data &&
+            data.map(({ name, size, modified }) => (
+              <MediaItem
+                className={mc(
+                  `main__media${name === selectedMedia?.name ? " main__media--selected" : ""}`
+                )}
+                key={name + size + modified}
+                name={name}
+                size={size}
+                modified={modified}
+                onClick={() => setSelected(name + size)}
+              />
+            ))}
+        </div>
       </div>
-    </div>
+    </MainLayout>
   );
 }

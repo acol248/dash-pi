@@ -1,10 +1,14 @@
 .main {
-  background-color: var(--color-grey-100);
+  & .main__player {
+    top: 48px;
+    margin: 0 auto;
+  }
 
   & .main__media-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 0.75rem;
+    padding: 0 0 0.5rem;
 
     & .main__media {
       &--selected {
@@ -37,9 +41,9 @@
       justify-content: center;
       flex-direction: column;
       position: sticky;
-      top: 0;
+      top: 48px;
       width: calc(70vw - 1.5rem);
-      height: calc(100vh - 0.75rem);
+      height: calc(100vh - 48px - 0.75rem);
     }
 
     & .main__media-grid {
