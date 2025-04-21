@@ -11,9 +11,11 @@ from functools import wraps
 load_dotenv(dotenv_path='.env.local')
 
 OUTPUT_DIRECTORY = os.getenv('OUTPUT_DIR', './media')
-STATIC = os.getenv('STATIC', 'client/dist')
+STATIC = os.getenv('STATIC', '../client/dist')
 
-AUTH_SECRET = os.getenv('AUTH_SECRET', False)
+AUTH_SECRET = os.getenv('AUTH_SECRET')
+if not AUTH_SECRET:
+    raise ValueError("Environment variable AUTH_SECRET is required.")
 ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'SomeSecurePassword')
 
 os.makedirs('db', exist_ok=True)
@@ -53,10 +55,7 @@ def auth(f):
     return decorated
 
 # Main server function
-def create_server():
-    if (not AUTH_SECRET):
-        raise Exception('AUTH_SECRET is required')
-    
+def create_server():    
     app = Flask(__name__, static_folder=STATIC, static_url_path='/')
 
     @app.route('/api/login', methods=['POST'])

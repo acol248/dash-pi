@@ -2,7 +2,7 @@
 
 set -e
 
-APP_DIR="$HOME/dashpi"
+APP_DIR="$HOME/dash-pi"
 SERVICE_FILE="/etc/systemd/system/dashpi.service"
 VENV_DIR="$APP_DIR/venv"
 
