@@ -1,0 +1,12 @@
+[package]
+name = "dash-pi-rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dotenv = "0.15"
+chrono = "0.4"
+ctrlc = "3.4"
+log = "0.4"
+env_logger = "0.10"
+anyhow = "1.0"

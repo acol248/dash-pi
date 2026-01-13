@@ -1,0 +1,7 @@
+/dist
+/target
+**/*.rs.bk
+Cargo.lock
+
+# Environment variables
+.env
