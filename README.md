@@ -1,4 +1,4 @@
-# Dash Pi (Rust Version)
+# Dash Pi (Rust)
 
 A high performance video recorder to be ran on the Raspberry Pi and used as a car dash camera.
 
@@ -9,16 +9,15 @@ Currently tested on:
 - Records video clips in a loop ("dashcam mode").
 - Uses `libcamera-vid` (or `rpicam-vid`) for hardware-accelerated encoding.
 - Containerizes to MP4 using `ffmpeg` on the fly.
-- Handles graceful shutdown (Ctrl+C).
 - Configurable via Environment Variables or `.env`.
 
 ## Prerequisites on Raspberry Pi
-Ensure your Raspberry Pi Zero 2 W has the camera stack enabled and `ffmpeg` installed.
+Ensure your Raspberry Pi/target system has the camera stack enabled and `ffmpeg` installed.
 
 ```bash
 sudo apt update
 sudo apt install ffmpeg
-# The libcamera-apps are usually installed by default on Pi OS Bullseye/Bookworm
+# The libcamera-apps are usually installed by default on Pi OS, may need to be manually installed depending on hardware/software used
 ```
 
 ## Building
@@ -47,14 +46,9 @@ cd dash-pi-rs
 .\build_release.ps1
 ```
 
-### Artifacts
-Binaries will be placed in `dash-pi-rs/dist/`.
-- `dash-pi-rs-aarch64`: For 64-bit Raspberry Pi OS (Recommended for Zero 2 W).
-- `dash-pi-rs-armv7`: For 32-bit Raspberry Pi OS.
+## Deployment
 
-## Installation / Deployment
-
-1. Copy the appropriate binary to your Raspberry Pi:
+1. Copy the appropriate binary to your Raspberry Pi/target system:
    ```bash
    scp dist/dash-pi-rs-aarch64 pi@raspberrypi.local:~/dash-pi-rs
    ```
