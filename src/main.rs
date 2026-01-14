@@ -29,7 +29,7 @@ fn main() -> Result<()> {
     {
         env::set_var("RUST_LOG", "info");
     } else {
-        env::set_var("RUST_LOG", "error"); // Default to error only if logs not requested? Or just no op
+        env::set_var("RUST_LOG", "error");
     }
     env_logger::init();
 
@@ -87,6 +87,10 @@ fn main() -> Result<()> {
 
     if let Ok(lens_pos) = env::var("LENS_POSITION") {
         extra_cam_args.push_str(&format!(" --lens-position {}", lens_pos));
+    }
+
+    if let Ok(hdr) = env::var("HDR") {
+        extra_cam_args.push_str(&format!(" --hdr {}", hdr));
     }
 
     let user = env::var("USER").unwrap_or_else(|_| "pi".to_string());
