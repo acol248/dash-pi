@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 use std::env;
 use std::path::PathBuf;
 
+#[derive(Clone)]
 pub struct Config {
     pub width: String,
     pub height: String,
@@ -11,6 +12,9 @@ pub struct Config {
     pub extra_cam_args: String,
     pub output_dir: PathBuf,
     pub cam_cmd: String,
+    pub web_enabled: bool,
+    pub web_root: PathBuf,
+    pub web_port: u16,
 }
 
 impl Config {
@@ -78,6 +82,16 @@ impl Config {
 
         let cam_cmd = env::var("PICAM_APP").unwrap_or_else(|_| "libcamera-vid".to_string());
 
+        let web_enabled = env::var("WEB_ENABLED")
+            .unwrap_or_else(|_| "false".to_string())
+            .to_lowercase()
+            == "true";
+        let web_root = PathBuf::from(env::var("WEB_ROOT").unwrap_or_else(|_| "./dist".to_string()));
+        let web_port = env::var("WEB_PORT")
+            .unwrap_or_else(|_| "3000".to_string())
+            .parse()
+            .unwrap_or(3000);
+
         Ok(Config {
             width,
             height,
@@ -87,6 +101,9 @@ impl Config {
             extra_cam_args,
             output_dir,
             cam_cmd,
+            web_enabled,
+            web_root,
+            web_port,
         })
     }
 

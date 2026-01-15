@@ -1,7 +1,11 @@
-/dist
-/target
+# Camera specific ignores
+target
 **/*.rs.bk
 Cargo.lock
 
-# Environment variables
+# Dashboard specific ignores
+node_modules
+
+# General
+dist
 .env

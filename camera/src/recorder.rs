@@ -27,8 +27,6 @@ pub fn start_recording_loop(config: &Config, running: Arc<AtomicBool>) -> Result
 
         loop {
             if !running.load(Ordering::SeqCst) {
-                log::info!("Interrupted. Stopping recording...");
-
                 let _ = Command::new("kill")
                     .arg("-s")
                     .arg("TERM")
@@ -45,7 +43,7 @@ pub fn start_recording_loop(config: &Config, running: Arc<AtomicBool>) -> Result
             match child.try_wait() {
                 Ok(Some(status)) => {
                     if !status.success() {
-                        log::error!("Recording process exited with error: {:?}", status);
+                        println!("Recording process exited with error: {:?}", status);
                     }
                     break;
                 }
@@ -53,7 +51,7 @@ pub fn start_recording_loop(config: &Config, running: Arc<AtomicBool>) -> Result
                     thread::sleep(Duration::from_millis(200));
                 }
                 Err(e) => {
-                    log::error!("Error waiting for process: {}", e);
+                    println!("Error waiting for process: {}", e);
                     break;
                 }
             }
