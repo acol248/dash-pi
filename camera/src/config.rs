@@ -115,9 +115,9 @@ impl Config {
         })
     }
 
-    pub fn generate_cmd(&self, file_pattern: &str, start_number: usize) -> String {
+    pub fn generate_record_cmd(&self, file_pattern: &str, start_number: usize) -> String {
         format!(
-            "{} -t 0 --width {} --height {} --framerate {} --bitrate {} --nopreview --inline --output -{} | ffmpeg -y -f h264 -r {} -i - -c:v copy -f segment -segment_time {} -segment_start_number {} -segment_format_options movflags=+frag_keyframe+empty_moov+default_base_moof -reset_timestamps 1 \"{}\"",
+            "{} -t 0 --width {} --height {} --framerate {} --bitrate {} --nopreview --inline --output -{} | ffmpeg -y -f h264 -r {} -i - -c:v copy -f segment -segment_time {} -segment_start_number {} -segment_format mp4 -segment_format_options movflags=+frag_keyframe+empty_moov+default_base_moof -reset_timestamps 1 \"{}\"",
             self.cam_cmd,
             self.width,
             self.height,
@@ -128,6 +128,14 @@ impl Config {
             self.clip_length_sec,
             start_number,
             file_pattern
+        )
+    }
+
+    pub fn generate_remux_cmd(input_file: &str, output_file: &str) -> String {
+        format!(
+            "ffmpeg -y -i \"{}\" -c:v copy -movflags +faststart \"{}\"",
+            input_file,
+            output_file
         )
     }
 }
