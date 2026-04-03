@@ -1,8 +1,8 @@
 # Dash Pi (Rust)
 
-A high performance video recorder to be ran on the Raspberry Pi and used as a car dash camera.
+Dash camera video recording software.
 
-Currently tested on:
+Confirmed working on:
 - Raspberry Pi Zero 2W
 
 ## Features
