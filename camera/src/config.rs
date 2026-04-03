@@ -15,6 +15,7 @@ pub struct Config {
     pub web_enabled: bool,
     pub web_root: PathBuf,
     pub web_port: u16,
+    pub min_free_space_bytes: u64,
 }
 
 impl Config {
@@ -92,6 +93,12 @@ impl Config {
             .parse()
             .unwrap_or(3000);
 
+        let min_free_space_mb: u64 = env::var("MIN_FREE_MB")
+            .unwrap_or_else(|_| "500".to_string())
+            .parse()
+            .unwrap_or(500);
+        let min_free_space_bytes = min_free_space_mb * 1024 * 1024;
+
         Ok(Config {
             width,
             height,
@@ -104,6 +111,7 @@ impl Config {
             web_enabled,
             web_root,
             web_port,
+            min_free_space_bytes,
         })
     }
 
