@@ -116,14 +116,16 @@ impl Config {
     }
 
     pub fn generate_record_cmd(&self, file_pattern: &str, start_number: usize) -> String {
+        let framerate_u: u32 = self.framerate.parse().unwrap_or(30);
         format!(
-            "{} -t 0 --width {} --height {} --framerate {} --bitrate {} --nopreview --inline --output -{} | ffmpeg -y -f h264 -r {} -i - -c:v copy -f segment -segment_time {} -segment_start_number {} -segment_format mp4 -segment_format_options movflags=+frag_keyframe+empty_moov+default_base_moof -reset_timestamps 1 \"{}\"",
+            "{} -t 0 --width {} --height {} --framerate {} --bitrate {} --nopreview --inline --intra {} --output -{} | ffmpeg -y -fflags +genpts -f h264 -r {} -i - -c:v copy -f segment -segment_time {} -segment_start_number {} -segment_format mp4 -segment_format_options movflags=+frag_keyframe+empty_moov+default_base_moof -reset_timestamps 1 \"{}\"",
             self.cam_cmd,
             self.width,
             self.height,
             self.framerate,
             self.bitrate,
             self.extra_cam_args,
+            framerate_u,
             self.framerate,
             self.clip_length_sec,
             start_number,
