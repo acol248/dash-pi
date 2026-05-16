@@ -10,7 +10,7 @@ mod recorder;
 mod server;
 
 use config::Config;
-use recorder::start_recording_loop;
+use recorder::{start_recording_loop, start_preview_loop};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -48,6 +48,14 @@ async fn main() -> Result<()> {
         let server_running = running.clone();
         tokio::spawn(async move {
             server::run_server(server_config, server_running).await;
+        });
+    }
+
+    if config.preview_enabled {
+        let preview_config = config.clone();
+        let preview_running = running.clone();
+        tokio::task::spawn_blocking(move || {
+            start_preview_loop(&preview_config, preview_running);
         });
     }
 

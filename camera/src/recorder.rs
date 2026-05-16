@@ -3,10 +3,75 @@ use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::{self, JoinHandle};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use std::fs;
 use std::ffi::CString;
 use crate::config::Config;
+
+/// Periodically extracts a single frame from the currently-recording segment and
+/// writes it atomically to `{output_dir}/preview.jpg`.
+///
+/// This never opens the camera — it reads from the fmp4 file that libcamera-vid is
+/// already writing, which is safe and has negligible impact on the recorder.
+pub fn start_preview_loop(config: &Config, running: Arc<AtomicBool>) {
+    let interval = Duration::from_secs(config.preview_interval_sec);
+    let preview_path = config.output_dir.join("preview.jpg");
+    // Write to a temp file then rename so the server never sees a partial JPEG.
+    let preview_tmp = config.output_dir.join("preview.jpg.tmp");
+
+    let mut tracked_idx: Option<usize> = None;
+    let mut segment_appeared_at = Instant::now();
+
+    loop {
+        thread::sleep(interval);
+
+        if !running.load(Ordering::SeqCst) {
+            break;
+        }
+
+        let idx = match get_max_fmp4_index(&config.output_dir) {
+            Some(i) => i,
+            None => continue, // recording hasn't started yet
+        };
+
+        // Reset our clock whenever we move to a new segment.
+        if tracked_idx != Some(idx) {
+            tracked_idx = Some(idx);
+            segment_appeared_at = Instant::now();
+        }
+
+        let elapsed = segment_appeared_at.elapsed().as_secs();
+        // Seek a couple of seconds behind the live edge so the frame definitely exists.
+        let seek_secs = elapsed.saturating_sub(config.preview_interval_sec + 1);
+
+        let tmp_file = config.output_dir.join(format!("tmp_{:05}.mp4", idx));
+        if !tmp_file.exists() {
+            continue;
+        }
+
+        let status = Command::new("ffmpeg")
+            .args([
+                "-y",
+                "-ss", &seek_secs.to_string(),
+                "-i", &tmp_file.to_string_lossy(),
+                "-vframes", "1",
+                "-vf", "scale=640:-2",
+                "-q:v", "10",
+                &preview_tmp.to_string_lossy(),
+            ])
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status();
+
+        if matches!(status, Ok(s) if s.success()) {
+            let _ = fs::rename(&preview_tmp, &preview_path);
+        }
+    }
+
+    // Clean up stale preview on shutdown so the UI shows no frame rather than
+    // a freeze-frame from the previous session.
+    let _ = fs::remove_file(&preview_path);
+}
 
 fn generate_thumbnail(mp4_path: &std::path::Path) {
     let thumb_path = mp4_path.with_extension("jpg");

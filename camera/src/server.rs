@@ -1,7 +1,7 @@
 use axum::{
     Router,
     extract::{Path, Request, State},
-    http::StatusCode,
+    http::{header, StatusCode},
     response::{IntoResponse, Json},
     routing::get,
 };
@@ -26,6 +26,24 @@ struct MediaFile {
     size: u64,
     modified: u64,
     has_thumbnail: bool,
+}
+
+/// Serves the latest preview frame as a JPEG with no-cache headers.
+async fn get_preview(State(state): State<AppState>) -> impl IntoResponse {
+    let preview_path = state.output_dir.join("preview.jpg");
+    match tokio::fs::read(&preview_path).await {
+        Ok(bytes) => (
+            StatusCode::OK,
+            [
+                (header::CONTENT_TYPE, "image/jpeg"),
+                (header::CACHE_CONTROL, "no-store, no-cache, must-revalidate"),
+                (header::PRAGMA, "no-cache"),
+            ],
+            bytes,
+        )
+            .into_response(),
+        Err(_) => (StatusCode::NOT_FOUND, "No preview available").into_response(),
+    }
 }
 
 /// Returns a JSON list of media files in the output directory, sorted newest first.
@@ -142,6 +160,7 @@ pub async fn run_server(config: Config, running: Arc<AtomicBool>) {
     };
 
     let app = Router::new()
+        .route("/api/preview", get(get_preview))
         .route("/api/media", get(list_media))
         .route("/api/media/:filename", get(stream_media))
         .route("/api/media/:filename/thumbnail", get(get_thumbnail))

@@ -16,6 +16,8 @@ pub struct Config {
     pub web_root: PathBuf,
     pub web_port: u16,
     pub min_free_space_bytes: u64,
+    pub preview_enabled: bool,
+    pub preview_interval_sec: u64,
 }
 
 impl Config {
@@ -99,6 +101,16 @@ impl Config {
             .unwrap_or(500);
         let min_free_space_bytes = min_free_space_mb * 1024 * 1024;
 
+        let preview_enabled = env::var("PREVIEW_ENABLED")
+            .unwrap_or_else(|_| "false".to_string())
+            .to_lowercase()
+            == "true";
+        let preview_interval_sec: u64 = env::var("PREVIEW_INTERVAL")
+            .unwrap_or_else(|_| "2".to_string())
+            .parse()
+            .unwrap_or(2)
+            .max(1); // floor at 1 second
+
         Ok(Config {
             width,
             height,
@@ -112,6 +124,8 @@ impl Config {
             web_root,
             web_port,
             min_free_space_bytes,
+            preview_enabled,
+            preview_interval_sec,
         })
     }
 
