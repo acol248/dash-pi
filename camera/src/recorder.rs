@@ -8,6 +8,29 @@ use std::fs;
 use std::ffi::CString;
 use crate::config::Config;
 
+fn generate_thumbnail(mp4_path: &std::path::Path) {
+    let thumb_path = mp4_path.with_extension("jpg");
+    println!("Generating thumbnail for {}", mp4_path.display());
+    match Command::new("ffmpeg")
+        .args([
+            "-y",
+            "-ss", "2",
+            "-i", &mp4_path.to_string_lossy(),
+            "-vframes", "1",
+            "-vf", "scale='min(1280,iw)':'min(720,ih)':force_original_aspect_ratio=decrease",
+            "-q:v", "10",
+            &thumb_path.to_string_lossy(),
+        ])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+    {
+        Ok(s) if s.success() => println!("Thumbnail saved: {}", thumb_path.display()),
+        Ok(s) => println!("Thumbnail generation failed (status {:?}): {}", s, mp4_path.display()),
+        Err(e) => println!("Failed to run ffmpeg for thumbnail {}: {}", mp4_path.display(), e),
+    }
+}
+
 fn remux_to_mp4(fmp4_path: &std::path::Path, mp4_path: &std::path::Path) -> bool {
     println!("Remuxing {} → {}", fmp4_path.display(), mp4_path.display());
     let cmd = Config::generate_remux_cmd(
@@ -95,6 +118,10 @@ fn free_up_space(dir: &std::path::Path, min_free_bytes: u64) {
             path.display()
         );
         let _ = fs::remove_file(&path);
+        let thumb_path = path.with_extension("jpg");
+        if thumb_path.exists() {
+            let _ = fs::remove_file(&thumb_path);
+        }
     }
 }
 
@@ -247,6 +274,7 @@ fn check_and_remux_completed(
             println!("Segment {:05} complete, queuing remux...", idx);
             handles.push(thread::spawn(move || {
                 if remux_to_mp4(&tmp_mp4, &rec_mp4) {
+                    generate_thumbnail(&rec_mp4);
                     let _ = fs::remove_file(&tmp_mp4);
                 } else {
                     println!("Keeping tmp MP4 due to remux failure: {}", tmp_mp4.display());
@@ -268,6 +296,7 @@ fn remux_all_remaining_fmp4(dir: &std::path::Path, handles: &mut Vec<JoinHandle<
                         let rec_mp4 = dir.join(format!("rec_{:05}.mp4", idx));
                         handles.push(thread::spawn(move || {
                             if remux_to_mp4(&tmp_mp4, &rec_mp4) {
+                                generate_thumbnail(&rec_mp4);
                                 let _ = fs::remove_file(&tmp_mp4);
                             } else {
                                 println!("Keeping tmp MP4 due to remux failure: {}", tmp_mp4.display());
@@ -296,6 +325,7 @@ fn recover_orphaned_fmp4(dir: &std::path::Path) {
                         println!("  Empty file, deleting.");
                         let _ = fs::remove_file(&path);
                     } else if remux_to_mp4(&path, &rec_mp4) {
+                        generate_thumbnail(&rec_mp4);
                         let _ = fs::remove_file(&path);
                     }
                 }

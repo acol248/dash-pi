@@ -25,6 +25,7 @@ struct MediaFile {
     name: String,
     size: u64,
     modified: u64,
+    has_thumbnail: bool,
 }
 
 /// Returns a JSON list of media files in the output directory, sorted newest first.
@@ -52,10 +53,13 @@ async fn list_media(State(state): State<AppState>) -> impl IntoResponse {
                         .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
                         .map(|d| d.as_secs())
                         .unwrap_or(0);
+                    let thumb_path = path.with_extension("jpg");
+                    let has_thumbnail = tokio::fs::try_exists(&thumb_path).await.unwrap_or(false);
                     files.push(MediaFile {
                         name: entry.file_name().to_string_lossy().to_string(),
                         size: metadata.len(),
                         modified,
+                        has_thumbnail,
                     });
                 }
             }
@@ -69,6 +73,40 @@ async fn list_media(State(state): State<AppState>) -> impl IntoResponse {
 
     files.sort_by(|a, b| b.modified.cmp(&a.modified));
     Json(files).into_response()
+}
+
+/// Serves the JPEG thumbnail for a media file.
+async fn get_thumbnail(
+    State(state): State<AppState>,
+    Path(filename): Path<String>,
+    request: Request,
+) -> impl IntoResponse {
+    // Reject any path traversal attempts.
+    if filename.contains('/') || filename.contains('\\') || filename.contains("..") {
+        return (StatusCode::BAD_REQUEST, "Invalid filename").into_response();
+    }
+
+    // Accept the video filename and derive the thumbnail name, or accept a .jpg name directly.
+    let thumb_name = if filename.ends_with(".jpg") {
+        filename.clone()
+    } else {
+        let stem = std::path::Path::new(&filename)
+            .file_stem()
+            .map(|s| s.to_string_lossy().to_string())
+            .unwrap_or_else(|| filename.clone());
+        format!("{}.jpg", stem)
+    };
+
+    let thumb_path = state.output_dir.join(&thumb_name);
+
+    if !thumb_path.exists() || !thumb_path.is_file() {
+        return (StatusCode::NOT_FOUND, "Thumbnail not found").into_response();
+    }
+
+    match ServeFile::new(thumb_path).oneshot(request).await {
+        Ok(response) => response.map(axum::body::Body::new).into_response(),
+        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Failed to serve thumbnail").into_response(),
+    }
 }
 
 /// Streams an individual media file, supporting HTTP range requests for seeking.
@@ -106,6 +144,7 @@ pub async fn run_server(config: Config, running: Arc<AtomicBool>) {
     let app = Router::new()
         .route("/api/media", get(list_media))
         .route("/api/media/:filename", get(stream_media))
+        .route("/api/media/:filename/thumbnail", get(get_thumbnail))
         .with_state(state)
         .fallback_service(serve_dir);
 
