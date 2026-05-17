@@ -54,7 +54,7 @@ export function App() {
     <>
       <div className={classList}>
         {loading ? (
-          <p>Loading...</p>
+          <Spinner className={mc("app__loading")} />
         ) : list && list?.length > 0 ? (
           <div className={mc("app__list")} ref={parentRef}>
             <div
@@ -71,7 +71,7 @@ export function App() {
                     name={media?.name || "Unknown"}
                     size={media?.size || 0}
                     height={item.size}
-                    hasThumbnail={media?.hasThumbnail}
+                    hasThumbnail={media?.has_thumbnail}
                     style={{ transform: `translateY(${item.start}px)` }}
                     onClick={() => {
                       activePreview.current = media?.name || null;

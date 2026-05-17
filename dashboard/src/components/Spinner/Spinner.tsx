@@ -1,8 +1,9 @@
 import maps from "./Spinner.module.scss";
 
-export default function Spinner() {
+export default function Spinner({ className }: { className?: string }) {
   return (
     <svg
+      className={className}
       width="24"
       height="24"
       viewBox="0 0 24 24"
