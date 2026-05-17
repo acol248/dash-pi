@@ -66,7 +66,11 @@ export default function MediaTile({
       className={classList}
       style={{ ...style, height: height ? `${height}px` : undefined }}
     >
-      <button className={mc("media-tile__button")} onClick={onClick}>
+      <button
+        className={mc("media-tile__button")}
+        onClick={onClick}
+        aria-label={`Preview ${name}`}
+      >
         {hasThumbnail && (
           <img
             className={mc("media-tile__thumbnail")}
@@ -77,7 +81,11 @@ export default function MediaTile({
         <p className={mc("media-tile__name")}>{name}</p>
         <p className={mc("media-tile__size")}>{formatBytes(size)}</p>
       </button>
-      <button className={mc("media-tile__download")} onClick={handleDownload}>
+      <button
+        className={mc("media-tile__download")}
+        onClick={handleDownload}
+        aria-label={`Download ${name}`}
+      >
         {isDownloading ? (
           <Spinner />
         ) : (

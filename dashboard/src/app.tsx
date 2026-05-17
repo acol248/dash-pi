@@ -3,11 +3,12 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 
 // Components
 import MediaTile from "./components/MediaTile";
+import Modal from "./components/Modal";
+import Spinner from "./components/Spinner";
 
 // Styles
 import useClassList, { mapClassesCurried } from "@blocdigital/useclasslist";
 import maps from "./app.module.scss";
-import Modal from "./components/Modal";
 
 const mc = mapClassesCurried(maps, true);
 
@@ -26,6 +27,18 @@ export function App() {
     getScrollElement: () => parentRef.current,
     estimateSize: () => 84,
   });
+
+  /**
+   * Refresh media list from server
+   */
+  const handleRefresh = () => {
+    setLoading(true);
+
+    fetch("/api/media")
+      .then((res) => res.json())
+      .then(setList)
+      .finally(() => setLoading(false));
+  };
 
   // load media list
   useEffect(() => {
@@ -72,6 +85,22 @@ export function App() {
         ) : (
           <p className={mc("app__no-media")}>No media found.</p>
         )}
+
+        <div className={mc("action-bar")}>
+          <button
+            className={mc("action-bar__button")}
+            onClick={handleRefresh}
+            aria-label="Refresh media list"
+          >
+            {loading ? (
+              <Spinner />
+            ) : (
+              <svg viewBox="0 -960 960 960">
+                <path d="M480-160q-134 0-227-93t-93-227 93-227 227-93q69 0 132 28.5T720-690v-110h80v280H520v-80h168q-32-56-87.5-88T480-720q-100 0-170 70t-70 170 70 170 170 70q77 0 139-44t87-116h84q-28 106-114 173t-196 67" />
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
 
       <Modal open={previewOpen} onOpenChange={setPreviewOpen}>
