@@ -233,7 +233,7 @@ pub fn start_recording_loop(config: &Config, running: Arc<AtomicBool>) -> Result
             .arg("-c")
             .arg(&cmd_string)
             .stdout(Stdio::null())
-            .stderr(Stdio::null())
+            .stderr(Stdio::piped())
             .spawn()
             .context("Failed to start recording pipeline")?;
 
@@ -260,6 +260,15 @@ pub fn start_recording_loop(config: &Config, running: Arc<AtomicBool>) -> Result
                 Ok(Some(status)) => {
                     if !status.success() {
                         println!("Recording pipeline exited with error: {:?}", status);
+                        // Drain stderr for diagnostics
+                        if let Some(mut stderr) = child.stderr.take() {
+                            use std::io::Read;
+                            let mut err_output = String::new();
+                            let _ = stderr.read_to_string(&mut err_output);
+                            if !err_output.trim().is_empty() {
+                                println!("Pipeline stderr:\n{}", err_output);
+                            }
+                        }
                     }
                     break true; // unexpected exit — restart the pipeline
                 }
