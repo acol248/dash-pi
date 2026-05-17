@@ -4,6 +4,7 @@ declare global {
       name: string;
       size: number;
       modified: number;
+      hasThumbnail: boolean;
     }
   }
 }

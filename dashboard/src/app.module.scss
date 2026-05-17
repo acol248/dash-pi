@@ -9,6 +9,7 @@
     padding: 1rem;
     margin: 0;
     height: 100vh;
+    width: calc(100% - 2rem);
     overflow-y: auto;
   }
 
@@ -26,5 +27,25 @@
   &__no-media {
     text-align: center;
     margin-top: 2rem;
+  }
+}
+
+.video-preview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.5rem;
+
+  & > video {
+    border-radius: 6px;
+  }
+
+  &__help {
+    position: fixed;
+    inset: auto auto -50% 50%;
+    transform: translateX(-50%);
+    color: #fcfcfc;
+    font-size: 1rem;
+    font-weight: 600;
   }
 }
