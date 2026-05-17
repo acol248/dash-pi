@@ -15,23 +15,22 @@ A Raspberry Pi dashcam and web dashboard system.
 ## Quick Start
 
 1. **Clone and build:**
-
+   - Copy `dist/dash-pi.env.example` to `dist/dash-pi.env` and edit as needed.
    ```sh
    git clone ...
-   cd rs-dash-pi/camera
+   - Copy the contents of `dist/` to your Pi.
    ./build_release.sh
    ```
 
    (Add `--skip-prompt` to always remove `dist/` without prompting.)
 
 2. **Configure:**
-   - Copy `dist/dash-pi.env.example` to `dist/dash-pi.env` and edit as needed.
+   - Copy `camera/dist/dash-pi.env.example` to `camera/dist/dash-pi.env` and edit as needed.
 
 3. **Deploy:**
    - Copy the contents of `camera/dist/` to your Pi.
    - Run the binary for your platform:
      ```sh
-     ./dash-pi-rs-aarch64   # 64-bit Pi OS
      # or
      ./dash-pi-rs-armv7     # 32-bit Pi OS
      ```
@@ -49,9 +48,9 @@ This can be taken a step further by creating a service that runs the script on b
 rs-dash-pi/
 ├── camera/                # Rust backend (recorder, web server)
 │   ├── src/               # Rust source code
-│   ├── dist/              # Release output (binaries, dashboard, config)
-│   ├── build_release.sh   # Main build script (Linux/macOS)
-│   ├── build_release.ps1  # PowerShell build script (Windows)
+│   ├── dist/              # (output now in top-level dist/)
+├── build_release.sh       # Main build script (Linux/macOS)
+├── build_release.ps1      # PowerShell build script (Windows)
 │   ├── dash-pi.env.example # Example config file
 │   └── ...
 ├── dashboard/             # Frontend (Vite + Preact/React)
@@ -63,7 +62,6 @@ rs-dash-pi/
 └── README.md              # This file
 ```
 
----
 
 ## Configuration
 
@@ -81,9 +79,8 @@ All settings can be set via environment variables or a `.env` file (see `dash-pi
 
 - The build script cross-compiles for both 32-bit and 64-bit Pi OS using [cross](https://github.com/cross-rs/cross) and Docker.
 - The dashboard is built with npm/yarn/pnpm and copied into the release output.
-- The release output is always in `camera/dist/`.
+- The release output is always in `dist/`.
 
----
 
 ## Updating the Dashboard Only
 
@@ -98,7 +95,6 @@ rm -rf dist/dashboard
 cp -r ../dashboard/dist dist/dashboard
 ```
 
----
 
 ## License
 
