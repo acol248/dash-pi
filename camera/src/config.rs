@@ -89,7 +89,7 @@ impl Config {
             .unwrap_or_else(|_| "false".to_string())
             .to_lowercase()
             == "true";
-        let web_root = PathBuf::from(env::var("WEB_ROOT").unwrap_or_else(|_| "./dist".to_string()));
+        let web_root = PathBuf::from(env::var("WEB_ROOT").unwrap_or_else(|_| "./dashboard".to_string()));
         let web_port = env::var("WEB_PORT")
             .unwrap_or_else(|_| "3000".to_string())
             .parse()
