@@ -52,6 +52,10 @@ pub fn start_preview_loop(config: &Config, running: Arc<AtomicBool>) {
         let status = Command::new("ffmpeg")
             .args([
                 "-y",
+                "-hide_banner",
+                "-loglevel", "error",
+                "-nostats",
+                "-threads", "1",
                 "-ss", &seek_secs.to_string(),
                 "-i", &tmp_file.to_string_lossy(),
                 "-vframes", "1",
@@ -79,6 +83,10 @@ fn generate_thumbnail(mp4_path: &std::path::Path) {
     match Command::new("ffmpeg")
         .args([
             "-y",
+            "-hide_banner",
+            "-loglevel", "error",
+            "-nostats",
+            "-threads", "1",
             "-ss", "2",
             "-i", &mp4_path.to_string_lossy(),
             "-vframes", "1",
@@ -233,7 +241,7 @@ pub fn start_recording_loop(config: &Config, running: Arc<AtomicBool>) -> Result
             .arg("-c")
             .arg(&cmd_string)
             .stdout(Stdio::null())
-            .stderr(Stdio::piped())
+            .stderr(Stdio::inherit())
             .spawn()
             .context("Failed to start recording pipeline")?;
 
@@ -258,17 +266,13 @@ pub fn start_recording_loop(config: &Config, running: Arc<AtomicBool>) -> Result
 
             match child.try_wait() {
                 Ok(Some(status)) => {
-                    if !status.success() {
+                    if status.success() {
+                        println!(
+                            "Recording pipeline exited unexpectedly with success status: {:?}",
+                            status
+                        );
+                    } else {
                         println!("Recording pipeline exited with error: {:?}", status);
-                        // Drain stderr for diagnostics
-                        if let Some(mut stderr) = child.stderr.take() {
-                            use std::io::Read;
-                            let mut err_output = String::new();
-                            let _ = stderr.read_to_string(&mut err_output);
-                            if !err_output.trim().is_empty() {
-                                println!("Pipeline stderr:\n{}", err_output);
-                            }
-                        }
                     }
                     break true; // unexpected exit — restart the pipeline
                 }
