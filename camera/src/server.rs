@@ -64,6 +64,11 @@ async fn list_media(State(state): State<AppState>) -> impl IntoResponse {
                 if !matches!(ext.as_str(), "mp4" | "mkv" | "avi" | "h264" | "ts") {
                     continue;
                 }
+                // Exclude files with 'tmp' in the filename
+                let file_name = entry.file_name().to_string_lossy().to_string();
+                if file_name.contains("tmp") {
+                    continue;
+                }
                 if let Ok(metadata) = entry.metadata().await {
                     let modified = metadata
                         .modified()
@@ -74,7 +79,7 @@ async fn list_media(State(state): State<AppState>) -> impl IntoResponse {
                     let thumb_path = path.with_extension("jpg");
                     let has_thumbnail = tokio::fs::try_exists(&thumb_path).await.unwrap_or(false);
                     files.push(MediaFile {
-                        name: entry.file_name().to_string_lossy().to_string(),
+                        name: file_name,
                         size: metadata.len(),
                         modified,
                         has_thumbnail,
