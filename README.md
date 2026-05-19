@@ -7,7 +7,6 @@ A Raspberry Pi dashcam and web dashboard system.
 - Continuous video recording in segments
 - Automatic storage management
 - Web dashboard for playback and management
-- Live preview (low FPS snapshot)
 - Cross-compiles for Pi Zero 2 W (32/64-bit)
 
 ---
