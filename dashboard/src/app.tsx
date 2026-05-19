@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 // Components
+import Alert from "./components/Alert";
 import MediaTile from "./components/MediaTile";
 import Modal from "./components/Modal";
 import Spinner from "./components/Spinner";
@@ -16,6 +17,9 @@ export function App() {
   const [loading, setLoading] = useState<boolean>(false);
   const [list, setList] = useState<Dashboard.Media[] | null>(null);
   const [previewOpen, setPreviewOpen] = useState<boolean>(false);
+  const [deleteTarget, setDeleteTarget] = useState<Dashboard.Media | null>(
+    null,
+  );
 
   const parentRef = useRef<HTMLDivElement>(null);
   const activePreview = useRef<Dashboard.Media["name"] | null>(null);
@@ -39,6 +43,25 @@ export function App() {
       .then(setList)
       .finally(() => setLoading(false));
   };
+
+  /**
+   * Remove this media file from the system
+   * @param name identifier for target media
+   */
+  const handleDelete = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/media/${deleteTarget?.name}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) throw new Error("Failed to delete media file");
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setList((l) => (l || []).filter((m) => m.name !== deleteTarget?.name));
+      setDeleteTarget(null);
+    }
+  }, [deleteTarget]);
 
   // load media list
   useEffect(() => {
@@ -89,8 +112,9 @@ export function App() {
                     height={item.size}
                     hasThumbnail={media?.has_thumbnail}
                     style={{ transform: `translateY(${item.start}px)` }}
+                    onDelete={() => setDeleteTarget(media)}
                     onClick={() => {
-                      activePreview.current = media?.name || null;
+                      activePreview.current = media.name || null;
                       setPreviewOpen(true);
                     }}
                   />
@@ -119,8 +143,20 @@ export function App() {
         </div>
       </div>
 
-      <Modal open={previewOpen} onOpenChange={setPreviewOpen}>
-        <div className={mc("video-preview")}>
+      <Alert
+        title="Delete Media"
+        description={`Are you sure you want to delete ${deleteTarget?.name}?`}
+        open={!!deleteTarget}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
+
+      <Modal
+        className={mc("video-preview")}
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+      >
+        <div className={mc("video-preview__inner")}>
           <video src={`/api/media/${activePreview.current}`} controls />
 
           <span className={mc("video-preview__help")}>Tap to Dismiss</span>
