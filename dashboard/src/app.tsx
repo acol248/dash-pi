@@ -44,8 +44,24 @@ export function App() {
   useEffect(() => {
     if (list) return;
 
+    /**
+     * Sort media list by recorded date, then modified date (both descending)
+     * @param list array list of items to sort
+     * @returns sorted list
+     */
+    const sortList = (list: Dashboard.Media[]) => {
+      return list.sort((a, b) => {
+        const recordedDelta = (b.recorded || 0) - (a.recorded || 0);
+
+        if (recordedDelta !== 0) return recordedDelta;
+
+        return (b.modified || 0) - (a.modified || 0);
+      });
+    };
+
     fetch("/api/media")
       .then((res) => res.json())
+      .then(sortList)
       .then(setList)
       .finally(() => setLoading(false));
   }, [list]);

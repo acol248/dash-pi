@@ -10,6 +10,7 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::atomic::{ AtomicBool, Ordering };
 use std::sync::Arc;
+use std::time::SystemTime;
 use tokio::time::{ sleep, Duration };
 use tower::util::ServiceExt;
 use tower_http::services::{ ServeDir, ServeFile };
@@ -24,8 +25,19 @@ struct AppState {
 struct MediaFile {
     name: String,
     size: u64,
+    recorded: u64,
     modified: u64,
     has_thumbnail: bool,
+}
+
+fn system_time_to_unix_secs(time: SystemTime) -> Option<u64> {
+    time.duration_since(std::time::UNIX_EPOCH).ok().map(|d| d.as_secs())
+}
+
+fn parse_recorded_order_from_name(file_name: &str) -> Option<u64> {
+    let stem = std::path::Path::new(file_name).file_stem()?.to_str()?;
+    let sequence = stem.strip_prefix("rec_").or_else(|| stem.strip_prefix("tmp_"))?;
+    sequence.parse::<u64>().ok()
 }
 
 /// Serves the latest preview frame as a JPEG with no-cache headers.
@@ -73,14 +85,21 @@ async fn list_media(State(state): State<AppState>) -> impl IntoResponse {
                     let modified = metadata
                         .modified()
                         .ok()
-                        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-                        .map(|d| d.as_secs())
+                        .and_then(system_time_to_unix_secs)
                         .unwrap_or(0);
+                    let created = metadata
+                        .created()
+                        .ok()
+                        .and_then(system_time_to_unix_secs);
+                    let recorded = parse_recorded_order_from_name(&file_name)
+                        .or(created)
+                        .unwrap_or(modified);
                     let thumb_path = path.with_extension("jpg");
                     let has_thumbnail = tokio::fs::try_exists(&thumb_path).await.unwrap_or(false);
                     files.push(MediaFile {
                         name: file_name,
                         size: metadata.len(),
+                        recorded,
                         modified,
                         has_thumbnail,
                     });
@@ -96,7 +115,11 @@ async fn list_media(State(state): State<AppState>) -> impl IntoResponse {
         }
     }
 
-    files.sort_by(|a, b| b.modified.cmp(&a.modified));
+    files.sort_by(|a, b| {
+        b.recorded
+            .cmp(&a.recorded)
+            .then_with(|| b.modified.cmp(&a.modified))
+    });
     Json(files).into_response()
 }
 
