@@ -1,0 +1,28 @@
+.popover {
+  box-sizing: border-box;
+  border-radius: 8px;
+  background-color: color-mix(
+    in srgb,
+    var(--background-color) 92%,
+    var(--text-color)
+  );
+  color: var(--text-color);
+  border: 1px solid color-mix(in srgb, var(--text-color) 15%, transparent);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+
+  transition-property: opacity, transform;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+
+  &[data-starting-style],
+  &[data-ending-style] {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  &__title {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+}
