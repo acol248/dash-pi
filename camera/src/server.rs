@@ -1,18 +1,18 @@
 use axum::{
     Router,
-    extract::{Path, Request, State},
-    http::{header, StatusCode},
-    response::{IntoResponse, Json},
-    routing::get,
+    extract::{ Path, Request, State },
+    http::{ header, StatusCode },
+    response::{ IntoResponse, Json },
+    routing::{ get },
 };
 use serde::Serialize;
 use std::net::SocketAddr;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{ AtomicBool, Ordering };
 use std::sync::Arc;
-use tokio::time::{sleep, Duration};
+use tokio::time::{ sleep, Duration };
 use tower::util::ServiceExt;
-use tower_http::services::{ServeDir, ServeFile};
+use tower_http::services::{ ServeDir, ServeFile };
 use crate::config::Config;
 
 #[derive(Clone)]
@@ -32,16 +32,16 @@ struct MediaFile {
 async fn get_preview(State(state): State<AppState>) -> impl IntoResponse {
     let preview_path = state.output_dir.join("preview.jpg");
     match tokio::fs::read(&preview_path).await {
-        Ok(bytes) => (
-            StatusCode::OK,
-            [
-                (header::CONTENT_TYPE, "image/jpeg"),
-                (header::CACHE_CONTROL, "no-store, no-cache, must-revalidate"),
-                (header::PRAGMA, "no-cache"),
-            ],
-            bytes,
-        )
-            .into_response(),
+        Ok(bytes) =>
+            (
+                StatusCode::OK,
+                [
+                    (header::CONTENT_TYPE, "image/jpeg"),
+                    (header::CACHE_CONTROL, "no-store, no-cache, must-revalidate"),
+                    (header::PRAGMA, "no-cache"),
+                ],
+                bytes,
+            ).into_response(),
         Err(_) => (StatusCode::NOT_FOUND, "No preview available").into_response(),
     }
 }
@@ -89,8 +89,10 @@ async fn list_media(State(state): State<AppState>) -> impl IntoResponse {
         }
         Err(e) => {
             println!("Failed to read media directory: {}", e);
-            return (StatusCode::INTERNAL_SERVER_ERROR, "Failed to read media directory")
-                .into_response();
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to read media directory",
+            ).into_response();
         }
     }
 
@@ -102,7 +104,7 @@ async fn list_media(State(state): State<AppState>) -> impl IntoResponse {
 async fn get_thumbnail(
     State(state): State<AppState>,
     Path(filename): Path<String>,
-    request: Request,
+    request: Request
 ) -> impl IntoResponse {
     // Reject any path traversal attempts.
     if filename.contains('/') || filename.contains('\\') || filename.contains("..") {
@@ -113,7 +115,8 @@ async fn get_thumbnail(
     let thumb_name = if filename.ends_with(".jpg") {
         filename.clone()
     } else {
-        let stem = std::path::Path::new(&filename)
+        let stem = std::path::Path
+            ::new(&filename)
             .file_stem()
             .map(|s| s.to_string_lossy().to_string())
             .unwrap_or_else(|| filename.clone());
@@ -132,11 +135,58 @@ async fn get_thumbnail(
     }
 }
 
+/// Deletes a media file and its associated thumbnail.
+async fn delete_media(
+    State(state): State<AppState>,
+    Path(filename): Path<String>
+) -> impl IntoResponse {
+    if filename.contains('/') || filename.contains('\\') || filename.contains("..") {
+        return (StatusCode::BAD_REQUEST, "Invalid filename").into_response();
+    }
+
+    let file_path = state.output_dir.join(&filename);
+
+    let canonical_dir = match state.output_dir.canonicalize() {
+        Ok(p) => p,
+        Err(_) => {
+            return (StatusCode::INTERNAL_SERVER_ERROR, "Server error").into_response();
+        }
+    };
+    match file_path.canonicalize() {
+        Ok(p) if !p.starts_with(&canonical_dir) => {
+            return (StatusCode::BAD_REQUEST, "Invalid filename").into_response();
+        }
+        Err(_) => {
+            return (StatusCode::NOT_FOUND, "File not found").into_response();
+        }
+        _ => {}
+    }
+
+    if !file_path.is_file() {
+        return (StatusCode::NOT_FOUND, "File not found").into_response();
+    }
+
+    if let Err(e) = tokio::fs::remove_file(&file_path).await {
+        println!("Failed to delete file {:?}: {}", file_path, e);
+        return (StatusCode::INTERNAL_SERVER_ERROR, "Failed to delete file").into_response();
+    }
+
+    let stem = std::path::Path
+        ::new(&filename)
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_else(|| filename.clone());
+    let thumb_path = state.output_dir.join(format!("{}.jpg", stem));
+    let _ = tokio::fs::remove_file(&thumb_path).await;
+
+    (StatusCode::NO_CONTENT, "").into_response()
+}
+
 /// Streams an individual media file, supporting HTTP range requests for seeking.
 async fn stream_media(
     State(state): State<AppState>,
     Path(filename): Path<String>,
-    request: Request,
+    request: Request
 ) -> impl IntoResponse {
     // Reject any path traversal attempts.
     if filename.contains('/') || filename.contains('\\') || filename.contains("..") {
@@ -157,8 +207,7 @@ async fn stream_media(
 
 pub async fn run_server(config: Config, running: Arc<AtomicBool>) {
     let index_path = config.web_root.join("index.html");
-    let serve_dir = ServeDir::new(&config.web_root)
-        .fallback(ServeFile::new(index_path));
+    let serve_dir = ServeDir::new(&config.web_root).fallback(ServeFile::new(index_path));
 
     let state = AppState {
         output_dir: config.output_dir.clone(),
@@ -167,7 +216,7 @@ pub async fn run_server(config: Config, running: Arc<AtomicBool>) {
     let app = Router::new()
         .route("/api/preview", get(get_preview))
         .route("/api/media", get(list_media))
-        .route("/api/media/:filename", get(stream_media))
+        .route("/api/media/:filename", get(stream_media).delete(delete_media))
         .route("/api/media/:filename/thumbnail", get(get_thumbnail))
         .with_state(state)
         .fallback_service(serve_dir);
