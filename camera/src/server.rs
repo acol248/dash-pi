@@ -19,6 +19,7 @@ use crate::config::Config;
 #[derive(Clone)]
 struct AppState {
     output_dir: PathBuf,
+    last_preview_request: Arc<std::sync::atomic::AtomicU64>,
 }
 
 #[derive(Serialize)]
@@ -42,6 +43,12 @@ fn parse_recorded_order_from_name(file_name: &str) -> Option<u64> {
 
 /// Serves the latest preview frame as a JPEG with no-cache headers.
 async fn get_preview(State(state): State<AppState>) -> impl IntoResponse {
+    let now = SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    state.last_preview_request.store(now, Ordering::SeqCst);
+
     let preview_path = state.output_dir.join("preview.jpg");
     match tokio::fs::read(&preview_path).await {
         Ok(bytes) =>
@@ -148,7 +155,12 @@ async fn get_thumbnail(
 
     let thumb_path = state.output_dir.join(&thumb_name);
 
-    if !thumb_path.exists() || !thumb_path.is_file() {
+    let metadata = match tokio::fs::metadata(&thumb_path).await {
+        Ok(m) => m,
+        Err(_) => return (StatusCode::NOT_FOUND, "Thumbnail not found").into_response(),
+    };
+
+    if !metadata.is_file() {
         return (StatusCode::NOT_FOUND, "Thumbnail not found").into_response();
     }
 
@@ -169,23 +181,31 @@ async fn delete_media(
 
     let file_path = state.output_dir.join(&filename);
 
-    let canonical_dir = match state.output_dir.canonicalize() {
+    let canonical_dir = match tokio::fs::canonicalize(&state.output_dir).await {
         Ok(p) => p,
         Err(_) => {
             return (StatusCode::INTERNAL_SERVER_ERROR, "Server error").into_response();
         }
     };
-    match file_path.canonicalize() {
-        Ok(p) if !p.starts_with(&canonical_dir) => {
-            return (StatusCode::BAD_REQUEST, "Invalid filename").into_response();
+    let canonical_file = match tokio::fs::canonicalize(&file_path).await {
+        Ok(p) => {
+            if !p.starts_with(&canonical_dir) {
+                return (StatusCode::BAD_REQUEST, "Invalid filename").into_response();
+            }
+            p
         }
         Err(_) => {
             return (StatusCode::NOT_FOUND, "File not found").into_response();
         }
-        _ => {}
-    }
+    };
 
-    if !file_path.is_file() {
+    let metadata = match tokio::fs::metadata(&canonical_file).await {
+        Ok(m) => m,
+        Err(_) => {
+            return (StatusCode::NOT_FOUND, "File not found").into_response();
+        }
+    };
+    if !metadata.is_file() {
         return (StatusCode::NOT_FOUND, "File not found").into_response();
     }
 
@@ -218,7 +238,12 @@ async fn stream_media(
 
     let file_path = state.output_dir.join(&filename);
 
-    if !file_path.exists() || !file_path.is_file() {
+    let metadata = match tokio::fs::metadata(&file_path).await {
+        Ok(m) => m,
+        Err(_) => return (StatusCode::NOT_FOUND, "File not found").into_response(),
+    };
+
+    if !metadata.is_file() {
         return (StatusCode::NOT_FOUND, "File not found").into_response();
     }
 
@@ -228,12 +253,17 @@ async fn stream_media(
     }
 }
 
-pub async fn run_server(config: Config, running: Arc<AtomicBool>) {
+pub async fn run_server(
+    config: Config,
+    running: Arc<AtomicBool>,
+    last_preview_request: Arc<std::sync::atomic::AtomicU64>,
+) {
     let index_path = config.web_root.join("index.html");
     let serve_dir = ServeDir::new(&config.web_root).fallback(ServeFile::new(index_path));
 
     let state = AppState {
         output_dir: config.output_dir.clone(),
+        last_preview_request,
     };
 
     let app = Router::new()

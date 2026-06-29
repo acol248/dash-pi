@@ -147,11 +147,4 @@ impl Config {
         )
     }
 
-    pub fn generate_remux_cmd(input_file: &str, output_file: &str) -> String {
-        format!(
-            "ffmpeg -y -i \"{}\" -c:v copy -movflags +faststart \"{}\"",
-            input_file,
-            output_file
-        )
-    }
 }

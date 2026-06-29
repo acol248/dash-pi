@@ -13,7 +13,12 @@ use crate::config::Config;
 ///
 /// This never opens the camera — it reads from the fmp4 file that libcamera-vid is
 /// already writing, which is safe and has negligible impact on the recorder.
-pub fn start_preview_loop(config: &Config, running: Arc<AtomicBool>) {
+pub fn start_preview_loop(
+    config: &Config,
+    running: Arc<AtomicBool>,
+    active_segment: Arc<std::sync::atomic::AtomicUsize>,
+    last_preview_request: Arc<std::sync::atomic::AtomicU64>,
+) {
     let interval = Duration::from_secs(config.preview_interval_sec);
     let preview_path = config.output_dir.join("preview.jpg");
     // Write to a temp file then rename so the server never sees a partial JPEG.
@@ -21,18 +26,34 @@ pub fn start_preview_loop(config: &Config, running: Arc<AtomicBool>) {
 
     let mut tracked_idx: Option<usize> = None;
     let mut segment_appeared_at = Instant::now();
+    let mut last_generation = Instant::now() - interval;
 
     loop {
-        thread::sleep(interval);
+        thread::sleep(Duration::from_millis(200));
 
         if !running.load(Ordering::SeqCst) {
             break;
         }
 
-        let idx = match get_max_fmp4_index(&config.output_dir) {
-            Some(i) => i,
-            None => continue, // recording hasn't started yet
-        };
+        let now_unix = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        let last_req = last_preview_request.load(Ordering::SeqCst);
+
+        if last_req == 0 || now_unix.saturating_sub(last_req) > 10 {
+            // Idle state: no client is actively requesting previews
+            continue;
+        }
+
+        if last_generation.elapsed() < interval {
+            continue;
+        }
+
+        let idx = active_segment.load(Ordering::SeqCst);
+        if idx == 0 {
+            continue;
+        }
 
         // Reset our clock whenever we move to a new segment.
         if tracked_idx != Some(idx) {
@@ -55,6 +76,7 @@ pub fn start_preview_loop(config: &Config, running: Arc<AtomicBool>) {
                 "-hide_banner",
                 "-loglevel", "error",
                 "-nostats",
+                "-skip_frame", "nokey",
                 "-threads", "1",
                 "-ss", &seek_secs.to_string(),
                 "-i", &tmp_file.to_string_lossy(),
@@ -70,6 +92,7 @@ pub fn start_preview_loop(config: &Config, running: Arc<AtomicBool>) {
         if matches!(status, Ok(s) if s.success()) {
             let _ = fs::rename(&preview_tmp, &preview_path);
         }
+        last_generation = Instant::now();
     }
 
     // Clean up stale preview on shutdown so the UI shows no frame rather than
@@ -86,6 +109,7 @@ fn generate_thumbnail(mp4_path: &std::path::Path) {
             "-hide_banner",
             "-loglevel", "error",
             "-nostats",
+            "-skip_frame", "nokey",
             "-threads", "1",
             "-ss", "2",
             "-i", &mp4_path.to_string_lossy(),
@@ -106,13 +130,15 @@ fn generate_thumbnail(mp4_path: &std::path::Path) {
 
 fn remux_to_mp4(fmp4_path: &std::path::Path, mp4_path: &std::path::Path) -> bool {
     println!("Remuxing {} → {}", fmp4_path.display(), mp4_path.display());
-    let cmd = Config::generate_remux_cmd(
-        &fmp4_path.to_string_lossy(),
-        &mp4_path.to_string_lossy(),
-    );
-    match Command::new("sh")
-        .arg("-c")
-        .arg(&cmd)
+    match Command::new("ffmpeg")
+        .args([
+            "-y",
+            "-i",
+            &fmp4_path.to_string_lossy(),
+            "-c:v", "copy",
+            "-movflags", "+faststart",
+            &mp4_path.to_string_lossy(),
+        ])
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status()
@@ -221,7 +247,11 @@ fn get_next_file_index(dir: &std::path::Path) -> usize {
     max_idx + 1
 }
 
-pub fn start_recording_loop(config: &Config, running: Arc<AtomicBool>) -> Result<()> {
+pub fn start_recording_loop(
+    config: &Config,
+    running: Arc<AtomicBool>,
+    active_segment: Arc<std::sync::atomic::AtomicUsize>,
+) -> Result<()> {
     recover_orphaned_fmp4(&config.output_dir);
 
     while running.load(Ordering::SeqCst) {
@@ -237,6 +267,8 @@ pub fn start_recording_loop(config: &Config, running: Arc<AtomicBool>) -> Result
         println!("Starting recording pipeline (segments from {:05})", start_index);
         let cmd_string = config.generate_record_cmd(&file_pattern.to_string_lossy(), start_index);
 
+        active_segment.store(start_index, Ordering::SeqCst);
+
         let mut child = Command::new("sh")
             .arg("-c")
             .arg(&cmd_string)
@@ -245,7 +277,7 @@ pub fn start_recording_loop(config: &Config, running: Arc<AtomicBool>) -> Result
             .spawn()
             .context("Failed to start recording pipeline")?;
 
-        let mut last_max_tmp: Option<usize> = None;
+        let mut next_expected_index = start_index + 1;
         let mut remux_handles: Vec<JoinHandle<()>> = Vec::new();
 
         let crashed = loop {
@@ -260,8 +292,32 @@ pub fn start_recording_loop(config: &Config, running: Arc<AtomicBool>) -> Result
                 break false;
             }
 
-            // When tmp_N+1.mp4 appears, tmp_N.mp4 is complete and safe to remux.
-            check_and_remux_completed(&config.output_dir, &mut last_max_tmp, &mut remux_handles);
+            // Check if the next segment file has appeared
+            while config.output_dir.join(format!("tmp_{:05}.mp4", next_expected_index)).exists() {
+                let completed_idx = next_expected_index - 1;
+                let tmp_mp4 = config.output_dir.join(format!("tmp_{:05}.mp4", completed_idx));
+                let rec_mp4 = config.output_dir.join(format!("rec_{:05}.mp4", completed_idx));
+                
+                println!(
+                    "Segment {:05} complete (detected new segment {:05}), queuing remux...",
+                    completed_idx, next_expected_index
+                );
+                
+                let tmp_mp4_clone = tmp_mp4.clone();
+                let rec_mp4_clone = rec_mp4.clone();
+                remux_handles.push(thread::spawn(move || {
+                    if remux_to_mp4(&tmp_mp4_clone, &rec_mp4_clone) {
+                        generate_thumbnail(&rec_mp4_clone);
+                        let _ = fs::remove_file(&tmp_mp4_clone);
+                    } else {
+                        println!("Keeping tmp MP4 due to remux failure: {}", tmp_mp4_clone.display());
+                    }
+                }));
+
+                next_expected_index += 1;
+                active_segment.store(next_expected_index - 1, Ordering::SeqCst);
+            }
+
             remux_handles.retain(|h| !h.is_finished());
 
             match child.try_wait() {
@@ -307,61 +363,7 @@ pub fn start_recording_loop(config: &Config, running: Arc<AtomicBool>) -> Result
     Ok(())
 }
 
-/// Returns the highest index among all tmp_NNNNN.mp4 (in-progress segment) files in `dir`.
-fn get_max_fmp4_index(dir: &std::path::Path) -> Option<usize> {
-    let mut max: Option<usize> = None;
-    if let Ok(entries) = fs::read_dir(dir) {
-        for entry in entries.filter_map(Result::ok) {
-            let path = entry.path();
-            if path.extension().and_then(|e| e.to_str()) == Some("mp4") {
-                if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-                    if let Some(n) = stem.strip_prefix("tmp_").and_then(|n| n.parse::<usize>().ok()) {
-                        max = Some(max.map_or(n, |m| m.max(n)));
-                    }
-                }
-            }
-        }
-    }
-    max
-}
 
-fn check_and_remux_completed(
-    dir: &std::path::Path,
-    last_max: &mut Option<usize>,
-    handles: &mut Vec<JoinHandle<()>>,
-) {
-    let current_max = match get_max_fmp4_index(dir) {
-        Some(m) => m,
-        None => return,
-    };
-    let prev_max = match *last_max {
-        None => {
-            *last_max = Some(current_max);
-            return;
-        }
-        Some(p) => p,
-    };
-    if current_max <= prev_max {
-        return;
-    }
-
-    for idx in prev_max..current_max {
-        let tmp_mp4 = dir.join(format!("tmp_{:05}.mp4", idx));
-        let rec_mp4 = dir.join(format!("rec_{:05}.mp4", idx));
-        if tmp_mp4.exists() {
-            println!("Segment {:05} complete, queuing remux...", idx);
-            handles.push(thread::spawn(move || {
-                if remux_to_mp4(&tmp_mp4, &rec_mp4) {
-                    generate_thumbnail(&rec_mp4);
-                    let _ = fs::remove_file(&tmp_mp4);
-                } else {
-                    println!("Keeping tmp MP4 due to remux failure: {}", tmp_mp4.display());
-                }
-            }));
-        }
-    }
-    *last_max = Some(current_max);
-}
 
 fn remux_all_remaining_fmp4(dir: &std::path::Path, handles: &mut Vec<JoinHandle<()>>) {
     if let Ok(entries) = fs::read_dir(dir) {
